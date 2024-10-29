@@ -1,5 +1,10 @@
 import { parseArgs } from "jsr:@std/cli/parse-args";
-import { PDFDocument, PDFPage, PDFName, rectanglesAreEqual } from "https://cdn.skypack.dev/pdf-lib?dts";
+import {
+  PDFDocument,
+  PDFName,
+  PDFPage,
+  rectanglesAreEqual,
+} from "https://cdn.skypack.dev/pdf-lib?dts";
 
 class PageSizeVariation {
   readonly variation: number[];
@@ -7,7 +12,9 @@ class PageSizeVariation {
   readonly min: number;
 
   constructor(pages: PDFPage[], vertical: boolean) {
-    const ns = vertical ? pages.map((page) => page.getHeight()) : pages.map((page) => page.getWidth());
+    const ns = vertical
+      ? pages.map((page) => page.getHeight())
+      : pages.map((page) => page.getWidth());
     this.variation = ns.reduce((acc: number[], w: number): number[] => {
       if (!acc.includes(w)) {
         acc.push(w);
@@ -40,7 +47,13 @@ const clonePDFPage = (org: PDFPage): PDFPage => {
 };
 
 // https://github.com/Hopding/pdf-lib/blob/93dd36e85aa659a3bca09867d2d8fac172501fbe/src/api/PDFPage.ts#L191
-const setViewRect = (page: PDFPage, xDelta: number, yDelta: number, width: number, height: number) => {
+const setViewRect = (
+  page: PDFPage,
+  xDelta: number,
+  yDelta: number,
+  width: number,
+  height: number,
+) => {
   const mbox = page.getMediaBox();
   const xpos = mbox.x + xDelta;
   const ypos = mbox.y + yDelta;
@@ -70,13 +83,25 @@ const setViewRect = (page: PDFPage, xDelta: number, yDelta: number, width: numbe
   }
 };
 
-const getCropedPage = (basePage: PDFPage, xDelta: number, yDelta: number, width: number, height: number): PDFPage => {
+const getCropedPage = (
+  basePage: PDFPage,
+  xDelta: number,
+  yDelta: number,
+  width: number,
+  height: number,
+): PDFPage => {
   const cloned = clonePDFPage(basePage);
   setViewRect(cloned, xDelta, yDelta, width, height);
   return cloned;
 };
 
-const unspread = async (path: string, vertical: boolean, centeredTop: boolean, centeredLast: boolean, invert: boolean): Promise<number> => {
+const unspread = async (
+  path: string,
+  vertical: boolean,
+  centeredTop: boolean,
+  centeredLast: boolean,
+  invert: boolean,
+): Promise<number> => {
   const data = await Deno.readFile(path);
   const srcDoc = await PDFDocument.load(data);
   const outDoc = await PDFDocument.create();
@@ -89,52 +114,44 @@ const unspread = async (path: string, vertical: boolean, centeredTop: boolean, c
   pages.forEach((page: PDFPage, idx: number) => {
     const width = page.getWidth();
     const height = page.getHeight();
-    const halfWidth = Math.floor(width / 2);
-    const halfHeight = Math.floor(height / 2);
 
-    if (vertical) {
-      if ((idx == 0 && centeredTop) || (idx == lastPageIndex && centeredLast)) {
-        const cloned = getCropedPage(page, 0, Math.floor(height / 4), width, halfHeight);
-        outDoc.addPage(cloned);
-        return;
-      }
+    const dimension = vertical ? height : width;
+    const otherDim = vertical ? width : height;
+    const halfDim = Math.floor(dimension / 2);
 
-      if (page.getHeight() == sizes.min) {
-        console.log(`SKIP: page ${idx + 1} is minimal size.`);
-        outDoc.addPage(clonePDFPage(page));
-        return;
-      }
-
-      const ys = [halfHeight, 0];
-      if (invert) {
-        ys.unshift(ys.pop()!);
-      }
-      ys.forEach((y) => {
-        const cloned = getCropedPage(page, 0, y, width, halfHeight);
-        outDoc.addPage(cloned);
-      });
-    } else {
-      if ((idx == 0 && centeredTop) || (idx == lastPageIndex && centeredLast)) {
-        const cloned = getCropedPage(page, Math.floor(width / 4), 0, halfWidth, height);
-        outDoc.addPage(cloned);
-        return;
-      }
-
-      if (page.getWidth() == sizes.min) {
-        console.log(`SKIP: page ${idx + 1} is minimal size.`);
-        outDoc.addPage(clonePDFPage(page));
-        return;
-      }
-
-      const xs = [0, halfWidth];
-      if (invert) {
-        xs.unshift(xs.pop()!);
-      }
-      xs.forEach((x) => {
-        const cloned = getCropedPage(page, x, 0, halfWidth, height);
-        outDoc.addPage(cloned);
-      });
+    if ((idx == 0 && centeredTop) || (idx == lastPageIndex && centeredLast)) {
+      const quadrant = Math.floor(dimension / 4);
+      const cloned = getCropedPage(
+        page,
+        vertical ? 0 : quadrant,
+        vertical ? quadrant : 0,
+        vertical ? otherDim : halfDim,
+        vertical ? halfDim : otherDim,
+      );
+      outDoc.addPage(cloned);
+      return;
     }
+
+    if (1 < sizes.variation.length && dimension == sizes.min) {
+      console.log(`SKIP: page ${idx + 1} is minimal size.`);
+      outDoc.addPage(clonePDFPage(page));
+      return;
+    }
+
+    const ds = vertical ? [halfDim, 0] : [0, halfDim];
+    if (invert) {
+      ds.unshift(ds.pop()!);
+    }
+    ds.forEach((d) => {
+      const cloned = getCropedPage(
+        page,
+        vertical ? 0 : d,
+        vertical ? d : 0,
+        vertical ? otherDim : halfDim,
+        vertical ? halfDim : otherDim,
+      );
+      outDoc.addPage(cloned);
+    });
   });
 
   const bytes = await outDoc.save();
@@ -155,7 +172,13 @@ const main = () => {
       invert: false,
     },
   });
-  unspread(flags.path, flags.vertical, flags.centeredTop, flags.centeredLast, flags.invert).then((rc) => {
+  unspread(
+    flags.path,
+    flags.vertical,
+    flags.centeredTop,
+    flags.centeredLast,
+    flags.invert,
+  ).then((rc) => {
     Deno.exit(rc);
   });
 };

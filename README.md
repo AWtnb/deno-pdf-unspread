@@ -1,6 +1,5 @@
 # README
 
-
 ## Usage
 
 ```
@@ -15,4 +14,5 @@ deno compile --allow-import --allow-read --allow-write --output unspread .\main.
 
 ---
 
-Using [pdf-lib](https://github.com/Hopding/pdf-lib) on [Deno](https://deno.com/).
+Using [pdf-lib](https://github.com/Hopding/pdf-lib) on
+[Deno](https://deno.com/).
