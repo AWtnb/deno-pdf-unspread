@@ -10,7 +10,7 @@
 ## Build
 
 ```
-deno compile --allow-import --allow-read --allow-write .\main.ts
+deno compile --allow-import --allow-read --allow-write --output unspread .\main.ts
 ```
 
 ---
