@@ -100,7 +100,7 @@ const unspread = async (
   vertical: boolean,
   centeredTop: boolean,
   centeredLast: boolean,
-  invert: boolean,
+  opposite: boolean,
 ): Promise<number> => {
   const data = await Deno.readFile(path);
   const srcDoc = await PDFDocument.load(data);
@@ -139,7 +139,7 @@ const unspread = async (
     }
 
     const ds = vertical ? [halfDim, 0] : [0, halfDim];
-    if (invert) {
+    if (opposite) {
       ds.unshift(ds.pop()!);
     }
     ds.forEach((d) => {
@@ -163,13 +163,13 @@ const unspread = async (
 const main = () => {
   const flags = parseArgs(Deno.args, {
     string: ["path"],
-    boolean: ["vertical", "centeredTop", "centeredLast", "invert"],
+    boolean: ["vertical", "centeredTop", "centeredLast", "opposite"],
     default: {
       path: "",
       vertical: false,
       centeredTop: false,
       centeredLast: false,
-      invert: false,
+      opposite: false,
     },
   });
   unspread(
@@ -177,7 +177,7 @@ const main = () => {
     flags.vertical,
     flags.centeredTop,
     flags.centeredLast,
-    flags.invert,
+    flags.opposite,
   ).then((rc) => {
     Deno.exit(rc);
   });
