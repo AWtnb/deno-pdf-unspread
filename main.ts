@@ -115,7 +115,7 @@ const unspread = async (path: string, vertical: boolean, centeredTop: boolean, c
       });
     } else {
       if ((idx == 0 && centeredTop) || (idx == lastPageIndex && centeredLast)) {
-        const cloned = getCropedPage(page, Math.floor(height / 4), 0, halfWidth, height);
+        const cloned = getCropedPage(page, Math.floor(width / 4), 0, halfWidth, height);
         outDoc.addPage(cloned);
         return;
       }
