@@ -111,6 +111,14 @@ const unspread = async (
 
   const sizes = new PageSizeVariation(pages, vertical);
 
+  if (
+    pages.some((page) => {
+      return page.getRotation().angle == 90;
+    })
+  ) {
+    vertical = !vertical;
+  }
+
   pages.forEach((page: PDFPage, idx: number) => {
     const width = page.getWidth();
     const height = page.getHeight();
