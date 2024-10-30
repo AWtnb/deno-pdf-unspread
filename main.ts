@@ -83,7 +83,7 @@ const setViewRect = (
   }
 };
 
-const getCropedPage = (
+const getCroppedPage = (
   basePage: PDFPage,
   xDelta: number,
   yDelta: number,
@@ -129,7 +129,7 @@ const unspread = async (
 
     if ((idx == 0 && centeredTop) || (idx == lastPageIndex && centeredLast)) {
       const quadrant = Math.floor(dimension / 4);
-      const cloned = getCropedPage(
+      const cloned = getCroppedPage(
         page,
         vertical ? 0 : quadrant,
         vertical ? quadrant : 0,
@@ -151,7 +151,7 @@ const unspread = async (
       ds.unshift(ds.pop()!);
     }
     ds.forEach((d) => {
-      const cloned = getCropedPage(
+      const cloned = getCroppedPage(
         page,
         vertical ? 0 : d,
         vertical ? d : 0,
