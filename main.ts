@@ -109,8 +109,6 @@ const unspread = async (
   const pages = await outDoc.copyPages(srcDoc, range);
   const lastPageIndex = srcDoc.getPageCount() - 1;
 
-  const sizes = new PageSizeVariation(pages, vertical);
-
   if (
     pages.some((page) => {
       return page.getRotation().angle == 90;
@@ -118,6 +116,8 @@ const unspread = async (
   ) {
     vertical = !vertical;
   }
+
+  const sizes = new PageSizeVariation(pages, vertical);
 
   pages.forEach((page: PDFPage, idx: number) => {
     const width = page.getWidth();
