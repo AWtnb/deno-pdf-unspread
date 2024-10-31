@@ -5,10 +5,8 @@ Using [pdf-lib](https://github.com/Hopding/pdf-lib) on [Deno](https://deno.com/)
 ## Build
 
 ```
-deno compile --allow-import --allow-read --allow-write --output unspread .\main.ts
+deno compile --allow-import --allow-read --allow-write .\main.ts
 ```
-
-
 
 
 ## Usage
@@ -20,7 +18,7 @@ Original:
 ### horizontal unspread
 
 ```
-.\pdfunspread.exe --path path\to\file.pdf
+.\deno-pdf-unspread.exe --path path\to\file.pdf
 ```
 
 ![img](images/img-1.png)
@@ -29,7 +27,7 @@ Original:
 ### horizontal unspread (right to left)
 
 ```
-.\pdfunspread.exe --path path\to\file.pdf --opposite
+.\deno-pdf-unspread.exe --path path\to\file.pdf --opposite
 ```
 
 ![img](images/img-2_opposite.png)
@@ -37,7 +35,7 @@ Original:
 ### vertical unspread
 
 ```
-.\pdfunspread.exe --path path\to\file.pdf --vertical
+.\deno-pdf-unspread.exe --path path\to\file.pdf --vertical
 ```
 
 ![img](images/img-3_vertical.png)
@@ -46,7 +44,7 @@ Original:
 ### vertical unspread (down to up)
 
 ```
-.\pdfunspread.exe --path path\to\file.pdf --vertical --opposite
+.\deno-pdf-unspread.exe --path path\to\file.pdf --vertical --opposite
 ```
 
 
@@ -56,7 +54,7 @@ Original:
 ### horizontal unspread (centerize first page)
 
 ```
-.\pdfunspread.exe --path path\to\file.pdf --centeredTop
+.\deno-pdf-unspread.exe --path path\to\file.pdf --centeredTop
 ```
 
 ![img](images/img-5_centeredTop.png)
@@ -65,7 +63,7 @@ Original:
 ### vertical unspread (centerize first page)
 
 ```
-.\pdfunspread.exe --path path\to\file.pdf --centeredTop --vertical
+.\deno-pdf-unspread.exe --path path\to\file.pdf --centeredTop --vertical
 ```
 
 
