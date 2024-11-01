@@ -111,7 +111,8 @@ const unspread = async (
 
   if (
     pages.some((page) => {
-      return page.getRotation().angle == 90;
+      const a = page.getRotation().angle;
+      return a == 90 || a == 270;
     })
   ) {
     vertical = !vertical;
