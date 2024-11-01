@@ -1,10 +1,5 @@
 import { parseArgs } from "jsr:@std/cli/parse-args";
-import {
-  PDFDocument,
-  PDFName,
-  PDFPage,
-  rectanglesAreEqual,
-} from "https://cdn.skypack.dev/pdf-lib?dts";
+import { PDFDocument, PDFPage } from "https://cdn.skypack.dev/pdf-lib?dts";
 
 class PageSizeVariation {
   readonly variation: number[];
@@ -32,67 +27,24 @@ const withSuffix = (path: string, suffix: string): string => {
   return parts.join(".") + suffix + "." + extension;
 };
 
-// https://github.com/Hopding/pdf-lib/issues/47#issuecomment-569315318
-const clonePDFPage = (org: PDFPage): PDFPage => {
-  const cloneNode = org.node.clone();
-
-  const { Contents } = org.node.normalizedEntries();
-  if (Contents) {
-    cloneNode.set(PDFName.of("Contents"), Contents.clone());
-  }
-
-  const cloneRef = org.doc.context.register(cloneNode);
-  const clonePage = PDFPage.of(cloneNode, cloneRef, org.doc);
-  return clonePage;
-};
-
-// https://github.com/Hopding/pdf-lib/blob/93dd36e85aa659a3bca09867d2d8fac172501fbe/src/api/PDFPage.ts#L191
-const setViewRect = (
+const embedCroppedPage = async (
+  outDoc: PDFDocument,
   page: PDFPage,
-  xDelta: number,
-  yDelta: number,
+  x: number,
+  y: number,
   width: number,
   height: number,
 ) => {
+  const added = outDoc.addPage([width, height]);
+  added.setRotation(page.getRotation());
   const mbox = page.getMediaBox();
-  const xpos = mbox.x + xDelta;
-  const ypos = mbox.y + yDelta;
-  page.setMediaBox(xpos, ypos, width, height);
-
-  const cropBox = page.getCropBox();
-  const bleedBox = page.getBleedBox();
-  const trimBox = page.getTrimBox();
-  const artBox = page.getArtBox();
-
-  const hasCropBox: boolean = !!page.node.CropBox();
-  const hasBleedBox: boolean = !!page.node.BleedBox();
-  const hasTrimBox: boolean = !!page.node.TrimBox();
-  const hasArtBox: boolean = !!page.node.ArtBox();
-
-  if (hasCropBox && rectanglesAreEqual(cropBox, mbox)) {
-    page.setCropBox(xpos, ypos, width, height);
-  }
-  if (hasBleedBox && rectanglesAreEqual(bleedBox, mbox)) {
-    page.setBleedBox(xpos, ypos, width, height);
-  }
-  if (hasTrimBox && rectanglesAreEqual(trimBox, mbox)) {
-    page.setTrimBox(xpos, ypos, width, height);
-  }
-  if (hasArtBox && rectanglesAreEqual(artBox, mbox)) {
-    page.setArtBox(xpos, ypos, width, height);
-  }
-};
-
-const getCroppedPage = (
-  basePage: PDFPage,
-  xDelta: number,
-  yDelta: number,
-  width: number,
-  height: number,
-): PDFPage => {
-  const cloned = clonePDFPage(basePage);
-  setViewRect(cloned, xDelta, yDelta, width, height);
-  return cloned;
+  const embedded = await outDoc.embedPage(page, {
+    left: mbox.x + x,
+    bottom: mbox.y + y,
+    right: mbox.x + x + width,
+    top: mbox.y + y + height,
+  });
+  added.drawPage(embedded);
 };
 
 const unspread = async (
@@ -109,12 +61,11 @@ const unspread = async (
   const pages = await outDoc.copyPages(srcDoc, range);
   const lastPageIndex = srcDoc.getPageCount() - 1;
 
-  if (
-    pages.some((page) => {
-      const a = page.getRotation().angle;
-      return a == 90 || a == 270;
-    })
-  ) {
+  const rotated = pages.some((page) => {
+    const a = page.getRotation().angle;
+    return a == 90 || a == 270 || a == -90;
+  });
+  if (rotated) {
     vertical = !vertical;
   }
 
@@ -129,37 +80,37 @@ const unspread = async (
     const halfDim = Math.floor(dimension / 2);
 
     if ((idx == 0 && centeredTop) || (idx == lastPageIndex && centeredLast)) {
-      const quadrant = Math.floor(dimension / 4);
-      const cloned = getCroppedPage(
+      const q = Math.floor(dimension / 4);
+      embedCroppedPage(
+        outDoc,
         page,
-        vertical ? 0 : quadrant,
-        vertical ? quadrant : 0,
+        vertical ? 0 : q,
+        vertical ? q : 0,
         vertical ? otherDim : halfDim,
         vertical ? halfDim : otherDim,
       );
-      outDoc.addPage(cloned);
       return;
     }
 
     if (1 < sizes.variation.length && dimension == sizes.min) {
       console.log(`SKIP: page ${idx + 1} is minimal size.`);
-      outDoc.addPage(clonePDFPage(page));
+      outDoc.addPage(page);
       return;
     }
 
-    const ds = vertical ? [halfDim, 0] : [0, halfDim];
-    if (opposite) {
+    const ds = opposite ? [halfDim, 0] : [0, halfDim];
+    if (vertical && !rotated) {
       ds.unshift(ds.pop()!);
     }
     ds.forEach((d) => {
-      const cloned = getCroppedPage(
+      embedCroppedPage(
+        outDoc,
         page,
         vertical ? 0 : d,
         vertical ? d : 0,
         vertical ? otherDim : halfDim,
         vertical ? halfDim : otherDim,
       );
-      outDoc.addPage(cloned);
     });
   });
 
