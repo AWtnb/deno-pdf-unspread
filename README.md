@@ -50,24 +50,3 @@ Original:
 
 ![img](images/img-4_vertical_opposite.png)
 
-
-### horizontal unspread (centerize first page)
-
-```
-.\deno-pdf-unspread.exe --path path\to\file.pdf --centeredTop
-```
-
-![img](images/img-5_centeredTop.png)
-
-
-### vertical unspread (centerize first page)
-
-```
-.\deno-pdf-unspread.exe --path path\to\file.pdf --centeredTop --vertical
-```
-
-
-![img](images/img-6_centeredTop_vertical.png)
-
-
-
