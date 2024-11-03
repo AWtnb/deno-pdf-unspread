@@ -27,6 +27,15 @@ const withSuffix = (path: string, suffix: string): string => {
   return parts.join(".") + suffix + "." + extension;
 };
 
+const checkSingled = (page: PDFPage, vertical: boolean): boolean => {
+  const mbox = page.getMediaBox();
+  const tbox = page.getTrimBox();
+  if (vertical) {
+    return tbox.height < mbox.height / 2;
+  }
+  return tbox.width < mbox.width / 2;
+};
+
 const embedCroppedPage = async (
   outDoc: PDFDocument,
   page: PDFPage,
@@ -50,16 +59,15 @@ const embedCroppedPage = async (
 const unspread = async (
   path: string,
   vertical: boolean,
-  centeredTop: boolean,
-  centeredLast: boolean,
   opposite: boolean,
 ): Promise<number> => {
+  console.log(`Unspreading: ${path}`);
+
   const data = await Deno.readFile(path);
   const srcDoc = await PDFDocument.load(data);
   const outDoc = await PDFDocument.create();
   const range = srcDoc.getPageIndices();
   const pages = await outDoc.copyPages(srcDoc, range);
-  const lastPageIndex = srcDoc.getPageCount() - 1;
 
   const rotated = pages.some((page) => {
     const a = page.getRotation().angle;
@@ -79,7 +87,14 @@ const unspread = async (
     const otherDim = vertical ? width : height;
     const halfDim = Math.floor(dimension / 2);
 
-    if ((idx == 0 && centeredTop) || (idx == lastPageIndex && centeredLast)) {
+    if (1 < sizes.variation.length && dimension == sizes.min) {
+      console.log(`- Skip: page ${idx + 1} is minimal size.`);
+      outDoc.addPage(page);
+      return;
+    }
+
+    if (checkSingled(page, vertical)) {
+      console.log(`- Note: page ${idx + 1} is non-spreaded.`);
       const q = Math.floor(dimension / 4);
       embedCroppedPage(
         outDoc,
@@ -92,16 +107,13 @@ const unspread = async (
       return;
     }
 
-    if (1 < sizes.variation.length && dimension == sizes.min) {
-      console.log(`SKIP: page ${idx + 1} is minimal size.`);
-      outDoc.addPage(page);
-      return;
-    }
-
     const ds = opposite ? [halfDim, 0] : [0, halfDim];
     if (vertical && !rotated) {
       ds.unshift(ds.pop()!);
+    } else {
+      // Do nothing for PDFs that have been rotated to make them horizontal
     }
+
     ds.forEach((d) => {
       embedCroppedPage(
         outDoc,
@@ -120,27 +132,22 @@ const unspread = async (
   return 0;
 };
 
-const main = () => {
+const main = async () => {
   const flags = parseArgs(Deno.args, {
     string: ["path"],
-    boolean: ["vertical", "centeredTop", "centeredLast", "opposite"],
+    boolean: ["vertical", "opposite"],
     default: {
       path: "",
       vertical: false,
-      centeredTop: false,
-      centeredLast: false,
       opposite: false,
     },
   });
-  unspread(
+  const result = await unspread(
     flags.path,
     flags.vertical,
-    flags.centeredTop,
-    flags.centeredLast,
     flags.opposite,
-  ).then((rc) => {
-    Deno.exit(rc);
-  });
+  );
+  Deno.exit(result);
 };
 
 main();
