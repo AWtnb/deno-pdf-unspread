@@ -1,23 +1,25 @@
 import { parseArgs } from "jsr:@std/cli/parse-args";
 import { PDFDocument, PDFPage } from "https://cdn.skypack.dev/pdf-lib?dts";
 
-class PageSizeVariation {
-  readonly variation: number[];
-  readonly max: number;
-  readonly min: number;
+class PageDimention {
+  readonly variants: number[];
 
   constructor(pages: PDFPage[], vertical: boolean) {
-    const ns = vertical
+    const dims = vertical
       ? pages.map((page) => page.getHeight())
       : pages.map((page) => page.getWidth());
-    this.variation = ns.reduce((acc: number[], w: number): number[] => {
+    this.variants = dims.reduce((acc: number[], w: number): number[] => {
       if (!acc.includes(w)) {
         acc.push(w);
       }
       return acc;
     }, []);
-    this.max = Math.max(...this.variation);
-    this.min = Math.min(...this.variation);
+  }
+  getMax(): number {
+    return Math.max(...this.variants);
+  }
+  getMin(): number {
+    return Math.min(...this.variants);
   }
 }
 
@@ -77,7 +79,7 @@ const unspread = async (
     vertical = !vertical;
   }
 
-  const sizes = new PageSizeVariation(pages, vertical);
+  const dims = new PageDimention(pages, vertical);
 
   pages.forEach((page: PDFPage, idx: number) => {
     const width = page.getWidth();
@@ -87,7 +89,7 @@ const unspread = async (
     const otherDim = vertical ? width : height;
     const halfDim = Math.floor(dimension / 2);
 
-    if (1 < sizes.variation.length && dimension == sizes.min) {
+    if (1 < dims.variants.length && dimension == dims.getMin()) {
       console.log(`- Skip: page ${idx + 1} is minimal size.`);
       outDoc.addPage(page);
       return;
