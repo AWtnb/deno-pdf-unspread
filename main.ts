@@ -1,7 +1,7 @@
 import { parseArgs } from "jsr:@std/cli/parse-args";
 import { PDFDocument, PDFPage } from "https://cdn.skypack.dev/pdf-lib?dts";
 
-class PageDimention {
+class PageSize {
   readonly variants: number[];
 
   constructor(pages: PDFPage[], vertical: boolean) {
@@ -79,7 +79,7 @@ const unspread = async (
     vertical = !vertical;
   }
 
-  const dims = new PageDimention(pages, vertical);
+  const sizes = new PageSize(pages, vertical);
 
   pages.forEach((page: PDFPage, idx: number) => {
     const width = page.getWidth();
@@ -89,7 +89,7 @@ const unspread = async (
     const otherDim = vertical ? width : height;
     const halfDim = Math.floor(dimension / 2);
 
-    if (1 < dims.variants.length && dimension == dims.getMin()) {
+    if (1 < sizes.variants.length && dimension == sizes.getMin()) {
       console.log(`- Skip: page ${idx + 1} is minimal size.`);
       outDoc.addPage(page);
       return;
